@@ -1,0 +1,48 @@
+<table border="1">
+	<thead>
+		<tr>
+			<th>ID</th>
+			<th>IP</th>
+			<th>Download</th>
+			<th>Upload</th>
+			<th>TimeStamp</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
+
+<script src="http://momentjs.com/downloads/moment.js"></script>
+<script>
+	// var nodes = document.querySelectorAll(".time");
+	// nodes.forEach((e) => {
+	// 	e.innerHTML = moment(e.innerHTML).format("YYYY.MM.DD hh:mm:ss");
+	// });
+
+	var ws = new WebSocket("ws://localhost:1323/ws");
+	ws.onmessage = (e) => {
+		d = JSON.parse(e.data);
+		d.Download = `${d.Download.toFixed(2)} mbit/s / ${(d.Download/8).toFixed(2)} mb/s`;
+		d.Upload = `${d.Upload.toFixed(2)} mbit/s / ${(d.Upload/8).toFixed(2)} mb/s`;
+
+		var node = document.querySelector(`tr#row${d.ID}`);
+		if(node == null) {
+			var tr = document.createElement("tr");
+			tr.id = `row${d.ID}`;
+			Object.keys(d).forEach((e) => {
+				var td = document.createElement("td");
+				td.classList.add(e);
+				td.innerHTML = d[e];
+				tr.appendChild(td);
+			});
+			document.querySelector("tbody").appendChild(tr);
+		} else {
+			Object.keys(d).forEach((e) => {
+				var td = document.querySelector(`tr#row${d.ID} td.${e}`);
+				td.innerHTML = d[e];
+			});
+		}
+
+		var ts = document.querySelector(`tr#row${d.ID} td.Timestamp`);
+		ts.innerHTML = moment(ts.innerHTML).format("YYYY.MM.DD hh:mm:ss");
+	}
+</script>
