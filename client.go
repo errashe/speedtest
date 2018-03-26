@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	. "log"
 	"math/rand"
 	"net"
 	"strconv"
@@ -10,10 +10,12 @@ import (
 	"time"
 )
 
+var buf []byte
+
 func main() {
 	l, err := net.Listen("tcp", ":1337")
 	if err != nil {
-		fmt.Println(err)
+		Println(err)
 		return
 	}
 	defer l.Close()
@@ -21,8 +23,8 @@ func main() {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println(err)
-			return
+			Println(err)
+			continue
 		}
 
 		go handleRequest(conn)
@@ -34,31 +36,61 @@ func handleRequest(conn net.Conn) {
 	defer conn.Close()
 	rand.Seed(time.Now().Unix())
 
-	buf := make([]byte, 1024)
-	n, _ := conn.Read(buf)
+	buf = make([]byte, 1024)
+
+	n, err := conn.Read(buf)
+	if err != nil {
+		Println(err)
+		return
+	}
 
 	strs := strings.Split(strings.TrimSpace(string(buf[:n])), "|")
-	test_size, _ := strconv.Atoi(strs[1])
-	WINDOW_SIZE, _ := strconv.Atoi(strs[2])
+	test_size, err := strconv.Atoi(strs[1])
+	if err != nil {
+		Println(err)
+		return
+	}
+	WINDOW_SIZE, err := strconv.Atoi(strs[2])
+	if err != nil {
+		Println(err)
+		return
+	}
 	BLOCK_SIZE := WINDOW_SIZE * 1024
-
-	buf = make([]byte, BLOCK_SIZE)
 
 	switch string(strs[0]) {
 	case "download":
-		fmt.Println("DOWNLOADING")
-		rand.Read(buf)
+		tmp := make([]byte, BLOCK_SIZE)
+		rand.Read(tmp)
 		for i := 0; i < test_size*1024*1024/BLOCK_SIZE; i++ {
-			conn.Write(buf)
+			_, err := conn.Write(tmp)
+			if err != nil {
+				Println(err)
+				return
+			}
 		}
 	case "upload":
-		fmt.Println("UPLOADING")
 		for {
-			_, err := conn.Read(buf)
-
+			tmp := make([]byte, BLOCK_SIZE)
+			_, err := conn.Read(tmp)
 			if err == io.EOF {
 				break
+			} else if err != nil {
+				Println(err)
+				return
 			}
+		}
+	case "ping":
+		for {
+			tmp := make([]byte, 64)
+			_, err := conn.Read(tmp)
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				Println(err)
+				return
+			}
+
+			conn.Write(tmp)
 		}
 	}
 }

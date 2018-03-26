@@ -5,6 +5,7 @@
 			<th>IP</th>
 			<th>Download</th>
 			<th>Upload</th>
+			<th>Ping</th>
 			<th>TimeStamp</th>
 		</tr>
 	</thead>
@@ -18,16 +19,17 @@
 	// 	e.innerHTML = moment(e.innerHTML).format("YYYY.MM.DD hh:mm:ss");
 	// });
 
-	var ws = new WebSocket("ws://localhost:1323/ws");
+	var ws = new WebSocket("ws://" + document.location.host + "/ws");
 	ws.onmessage = (e) => {
 		d = JSON.parse(e.data);
 		d.Download = `${d.Download.toFixed(2)} mbit/s / ${(d.Download/8).toFixed(2)} mb/s`;
 		d.Upload = `${d.Upload.toFixed(2)} mbit/s / ${(d.Upload/8).toFixed(2)} mb/s`;
+		d.Ping = `${d.Ping.toFixed(2)} ms`
 
-		var node = document.querySelector(`tr#row${d.ID}`);
+		var node = document.querySelector(`tr[ip=${d.IP}]`);
 		if(node == null) {
 			var tr = document.createElement("tr");
-			tr.id = `row${d.ID}`;
+			tr.setAttribute("ip", d.IP);
 			Object.keys(d).forEach((e) => {
 				var td = document.createElement("td");
 				td.classList.add(e);
@@ -37,12 +39,12 @@
 			document.querySelector("tbody").appendChild(tr);
 		} else {
 			Object.keys(d).forEach((e) => {
-				var td = document.querySelector(`tr#row${d.ID} td.${e}`);
+				var td = document.querySelector(`tr[ip=${d.IP}] td.${e}`);
 				td.innerHTML = d[e];
 			});
 		}
 
-		var ts = document.querySelector(`tr#row${d.ID} td.Timestamp`);
+		var ts = document.querySelector(`tr[ip=${d.IP}] td.Timestamp`);
 		ts.innerHTML = moment(ts.innerHTML).format("YYYY.MM.DD hh:mm:ss");
 	}
 </script>

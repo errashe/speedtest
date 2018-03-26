@@ -1,0 +1,54 @@
+version: '2'
+
+tasks:
+  default:
+    desc: Build all
+    cmds:
+      - task: client
+      - task: server
+
+  runc:
+    desc: Run client
+    cmds:
+      - go run client.go
+    silent: true
+
+  runs:
+    desc: Run server
+    cmds:
+      - go run server.go funcs.go structs.go
+    silent: true
+
+  client:
+    desc: Build client part
+    cmds:
+      - task: init
+      # - echo "client32 build"
+      # - GOOS=windows GOARCH=386 go build -ldflags="-w -s -H=windowsgui" -o out/client32.exe client.go
+      # - upx -9 out/client32.exe > /dev/null
+      - echo "client64 build"
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s -H=windowsgui" -o out/client64.exe client.go
+      - upx -9 out/client64.exe > /dev/null
+    silent: true
+  init:
+    desc: Build init prog
+    cmds:
+      - echo "init build"
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/init.exe init.go structs.go
+      - upx -9 out/init.exe > /dev/null
+    silent: true
+
+  server:
+    desc: Build server part
+    cmds:
+      - echo "server64 build"
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/server64.exe server.go funcs.go structs.go
+      - upx -9 out/server64.exe > /dev/null
+    silent: true
+
+  release:
+    desc: put everything on github
+    cmds:
+      - zip -r out/tpls.zip templates/* > /dev/null
+      - ghr -recreate latest out/
+    silent: true
