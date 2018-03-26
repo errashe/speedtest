@@ -6,7 +6,6 @@ import (
 	"flag"
 	. "fmt"
 	"io"
-	"time"
 
 	"github.com/asdine/storm"
 	"github.com/labstack/echo"
