@@ -7,6 +7,8 @@ import (
 	. "fmt"
 	"io"
 
+	. "./structs"
+
 	"github.com/asdine/storm"
 	"github.com/labstack/echo"
 	"gopkg.in/olahol/melody.v1"

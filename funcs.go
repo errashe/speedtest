@@ -11,6 +11,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	. "./structs"
 )
 
 var mutex sync.Mutex
@@ -28,7 +30,7 @@ func exitSaver() {
 func speedTester(ws, ts int) {
 	for {
 		var tmp Server
-		if err := db.Select().Limit(1).OrderBy("-Timestamp").First(&tmp); err != nil {
+		if err := db.Select().Limit(1).OrderBy("Timestamp").First(&tmp); err != nil {
 			fmt.Println(err)
 		}
 
@@ -37,9 +39,12 @@ func speedTester(ws, ts int) {
 		tmp.Ping = SpeedTest(tmp.IP, "ping", ws, ts) * 1000 / 4
 		tmp.Timestamp = time.Now()
 
+		if err = db.Save(&tmp); err != nil {
+			fmt.Println(err)
+		}
+
 		buff, _ := json.Marshal(tmp)
 		m.Broadcast(buff)
-
 		fmt.Println(tmp)
 
 		time.Sleep(time.Second)
@@ -48,17 +53,16 @@ func speedTester(ws, ts int) {
 
 func SpeedTest(ip, mode string, window_size, test_size int) float64 {
 	block_size := window_size * 1024
+	t := time.Now()
 
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:1337", ip), 3*time.Second)
 	if err != nil {
 		fmt.Println(err)
-		return 0.0
+		return 10000.0
 	}
 	defer conn.Close()
 
 	conn.Write([]byte(fmt.Sprintf("%s|%d|%d", mode, test_size, window_size)))
-
-	t := time.Now()
 
 	switch mode {
 	case "download":

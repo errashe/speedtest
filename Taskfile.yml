@@ -16,7 +16,7 @@ tasks:
   runs:
     desc: Run server
     cmds:
-      - go run server.go funcs.go structs.go
+      - go run server.go funcs.go
     silent: true
 
   client:
@@ -34,7 +34,7 @@ tasks:
     desc: Build init prog
     cmds:
       - echo "init build"
-      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/init.exe init.go structs.go
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/init.exe init.go
       - upx -9 out/init.exe > /dev/null
     silent: true
 
@@ -42,7 +42,7 @@ tasks:
     desc: Build server part
     cmds:
       - echo "server64 build"
-      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/server64.exe server.go funcs.go structs.go
+      - GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o out/server64.exe server.go funcs.go
       - upx -9 out/server64.exe > /dev/null
     silent: true
 
