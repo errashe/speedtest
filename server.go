@@ -64,7 +64,7 @@ func main() {
 
 	m.HandleConnect(func(mel *melody.Session) {
 		var servers []Server
-		if err = db.Select().OrderBy("Timestamp").Find(&servers); err != nil {
+		if err = db.Select().OrderBy("ID").Find(&servers); err != nil {
 			Println(err)
 		}
 		for _, server := range servers {

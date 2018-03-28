@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	. "fmt"
 	"log"
 	"net"
 	"os"
@@ -20,8 +20,9 @@ var err error
 func main() {
 	// defer db.Close()
 	app := cli.NewApp()
-	app.Version = "0.1.3"
-	app.Author = "Alexandr errashe Butenko"
+	app.Version = "0.1.4"
+	app.Author = "Александр errashe Бутенко"
+	app.Usage = "утилита для управления хостами в программе мониторинга"
 
 	app.HideHelp = true
 	// app.HideVersion = true
@@ -39,7 +40,7 @@ func main() {
 		{
 			Name:    "add",
 			Aliases: []string{"a"},
-			Usage:   "[host] to add in database",
+			Usage:   "[host] для добавления в базу",
 			Action: func(c *cli.Context) error {
 				host := c.Args().First()
 				_, err := net.LookupHost(host)
@@ -57,7 +58,7 @@ func main() {
 		{
 			Name:    "remove",
 			Aliases: []string{"r"},
-			Usage:   "[host] to remove from database",
+			Usage:   "[host] для удаления из базы",
 			Action: func(c *cli.Context) error {
 				host := c.Args().First()
 				_, err := net.LookupHost(host)
@@ -74,16 +75,16 @@ func main() {
 		{
 			Name:    "list",
 			Aliases: []string{"l"},
-			Usage:   "show all servers",
+			Usage:   "список всех хостов",
 			Action: func(c *cli.Context) error {
 				var servers []Server
 
-				if err = db.All(&servers); err != nil {
+				if err = db.Select().Find(&servers); err != nil {
 					return err
 				}
 
 				for _, server := range servers {
-					fmt.Println(server)
+					Println(server)
 				}
 
 				return nil
