@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	. "fmt"
-	"io"
+	"os"
+	"time"
 
+	. "./funcs"
 	. "./structs"
 
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/q"
 	"github.com/labstack/echo"
 	"gopkg.in/olahol/melody.v1"
 	"gopkg.in/unrolled/render.v1"
@@ -25,6 +28,11 @@ func main() {
 
 	flag.Parse()
 
+	if _, err := os.Stat("my.db"); os.IsNotExist(err) {
+		Println("Вам нужно инициализировать базу")
+		return
+	}
+
 	db, err = storm.Open("my.db")
 	if err != nil {
 		Println(err)
@@ -32,26 +40,20 @@ func main() {
 	defer db.Close()
 
 	db.Init(&Server{})
+	db.Init(&History{})
 
-	// switch err = db.Save(&Server{0, "localhost", 0, 0, 0, time.Now()}); err {
-	// case storm.ErrAlreadyExists:
-	// 	break
-	// default:
-	// 	Println(err)
-	// }
-
-	exitSaver()
+	// ExitSaver()
 
 	m = melody.New()
 
-	go speedTester(*window_size, *test_size)
+	go SpeedTester(*window_size, *test_size, m, db)
 
 	e := echo.New()
-	r := &RenderWrapper{render.New(render.Options{
+	r := NewRender(render.Options{
 		Directory:     "templates",
 		Layout:        "layout",
 		IsDevelopment: true,
-	})}
+	})
 	e.Renderer = r
 
 	e.GET("/", func(c echo.Context) error {
@@ -60,6 +62,21 @@ func main() {
 
 	e.GET("/ws", func(c echo.Context) error {
 		return m.HandleRequest(c.Response().Writer, c.Request())
+	})
+
+	m.HandleMessage(func(mel *melody.Session, msg []byte) {
+		cmd := new(Command)
+		err := json.Unmarshal(msg, cmd)
+		if err != nil {
+			Println(err)
+		}
+
+		switch cmd.Command {
+		case "up":
+			Println(cmd.Value)
+		default:
+			Println("UNEXPECTED COMMAND FOUND, WTF?!")
+		}
 	})
 
 	m.HandleConnect(func(mel *melody.Session) {
@@ -73,13 +90,35 @@ func main() {
 		}
 	})
 
+	e.GET("/graph", func(e echo.Context) error {
+		return e.Render(200, "graph", nil)
+	})
+
+	e.GET("/points", func(e echo.Context) error {
+		var query Quer
+		if err := e.Bind(&query); err != nil {
+			return err
+		}
+
+		var hs []History
+		if err := db.Select(q.Eq("IP", query.IP)).Reverse().Limit(query.Count).Find(&hs); err != nil {
+			Println(e.QueryParam("ip"))
+			Println(err)
+			return err
+		}
+
+		var times []time.Time
+		var YS1 []float64
+		var YS2 []float64
+
+		for _, h := range hs {
+			times = append(times, h.Timestamp)
+			YS1 = append(YS1, h.Download)
+			YS2 = append(YS2, h.Upload)
+		}
+
+		return e.JSON(200, echo.Map{"times": times, "YS1": YS1, "YS2": YS2})
+	})
+
 	e.Logger.Fatal(e.Start(":1323"))
-}
-
-type RenderWrapper struct { // We need to wrap the renderer because we need a different signature for echo.
-	rnd *render.Render
-}
-
-func (r *RenderWrapper) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return r.rnd.HTML(w, 0, name, data) // The zero status code is overwritten by echo.
 }

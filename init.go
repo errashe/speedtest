@@ -48,7 +48,11 @@ func main() {
 					return err
 				}
 
-				if err = db.Save(&Server{0, host, 0, 0, 0, time.Now()}); err != nil {
+				s := new(Server)
+				s.IP = host
+				s.Timestamp = time.Now()
+
+				if err = db.Save(s); err != nil {
 					return err
 				}
 
@@ -73,13 +77,50 @@ func main() {
 			},
 		},
 		{
+			Name:    "removeAll",
+			Aliases: []string{"ra"},
+			Usage:   "Очистка всей базы",
+			Action: func(c *cli.Context) error {
+				err := db.Select().Delete(new(Server))
+				if err == storm.ErrNotFound {
+					log.Println(err.Error())
+				} else if err != nil {
+					return err
+				}
+
+				err = db.Select().Delete(new(History))
+				if err == storm.ErrNotFound {
+					log.Println(err.Error())
+				} else if err != nil {
+					return err
+				}
+
+				return nil
+			},
+		},
+		{
+			Name:    "removeHistory",
+			Aliases: []string{"rh"},
+			Usage:   "Очистка истории",
+			Action: func(c *cli.Context) error {
+				err = db.Select().Delete(new(History))
+				if err == storm.ErrNotFound {
+					log.Println(err.Error())
+				} else if err != nil {
+					return err
+				}
+
+				return nil
+			},
+		},
+		{
 			Name:    "list",
 			Aliases: []string{"l"},
 			Usage:   "список всех хостов",
 			Action: func(c *cli.Context) error {
 				var servers []Server
 
-				if err = db.Select().Find(&servers); err != nil {
+				if err = db.Select().OrderBy("Timestamp").Find(&servers); err != nil {
 					return err
 				}
 

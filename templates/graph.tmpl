@@ -1,0 +1,45 @@
+<!-- <img /> -->
+<div id="myDiv"></div>
+<script type="text/javascript">
+	var params = new URLSearchParams(document.location.search);
+setInterval(() => {
+	fetch("http://" + document.location.host
+	+ "/points?ip=" + params.get("ip")
+	+ "&count=" + params.get("count")
+	+ "&rand=" + Math.random()).
+	then(r => r.text()).
+	then(t => JSON.parse(t)).
+	then(j => {
+		var trace1 = {
+			x: j.times,
+			y: j.YS1,
+			type: 'scatter',
+			line: {shape: 'spline'},
+			name: "download",
+		};
+
+		var trace2 = {
+			x: j.times,
+			y: j.YS2,
+			type: 'scatter',
+			line: {shape: 'spline'},
+			name: "upload",
+		};
+
+		var data = [trace1, trace2];
+
+		var layout = {
+			showlegend: true,
+			legend: {"orientation": "h"},
+			height: 600,
+			yaxis: {
+				range: [0, 30000],
+			},
+
+		};
+
+		Plotly.newPlot('myDiv', data, layout);
+	});
+}, 1000);
+</script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>

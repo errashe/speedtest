@@ -40,7 +40,7 @@ func handleRequest(conn net.Conn) {
 
 	n, err := conn.Read(buf)
 	if err != nil {
-		Println(err)
+		Printf("%x\n", err)
 		return
 	}
 

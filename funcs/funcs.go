@@ -1,4 +1,4 @@
-package main
+package Funcs
 
 import (
 	"crypto/rand"
@@ -12,12 +12,17 @@ import (
 	"syscall"
 	"time"
 
-	. "./structs"
+	. "../structs"
+
+	"github.com/asdine/storm"
+	"github.com/labstack/echo"
+	"gopkg.in/olahol/melody.v1"
+	"gopkg.in/unrolled/render.v1"
 )
 
 var mutex sync.Mutex
 
-func exitSaver() {
+func ExitSaver() {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Kill)
 	go func() {
@@ -27,11 +32,21 @@ func exitSaver() {
 	}()
 }
 
-func speedTester(ws, ts int) {
+func SpeedTester(ws, ts int, m *melody.Melody, db *storm.DB) {
+	t := time.Now()
 	for {
 		var tmp Server
-		if err := db.Select().Limit(1).OrderBy("Timestamp").First(&tmp); err != nil {
+		if err := db.Select().Limit(1).OrderBy("Timestamp").First(&tmp); err == storm.ErrNotFound {
+			fmt.Println("Необходимо инициализировать базу")
+			os.Exit(0)
+		} else if err != nil {
 			fmt.Println(err)
+			continue
+		}
+
+		if tmp.IP == "" {
+			fmt.Println("not found")
+			return
 		}
 
 		tmp.Download = float64(ts*8) / SpeedTest(tmp.IP, "download", ws, ts)
@@ -39,13 +54,20 @@ func speedTester(ws, ts int) {
 		tmp.Ping = SpeedTest(tmp.IP, "ping", ws, ts) * 1000 / 4
 		tmp.Timestamp = time.Now()
 
-		if err = db.Save(&tmp); err != nil {
+		var h History
+		h.Copy(tmp)
+
+		if err := db.Save(&h); err != nil {
 			fmt.Println(err)
 		}
 
 		buff, _ := json.Marshal(tmp)
 		m.Broadcast(buff)
-		fmt.Println(tmp)
+		fmt.Printf("\r%s\n%.2f", tmp, time.Since(t).Seconds())
+
+		if err := db.Save(&tmp); err != nil {
+			fmt.Println(err)
+		}
 
 		time.Sleep(time.Second)
 	}
@@ -95,4 +117,22 @@ func SpeedTest(ip, mode string, window_size, test_size int) float64 {
 	}
 
 	return time.Since(t).Seconds()
+}
+
+func NewRender(or render.Options) *RenderWrapper {
+	r := &RenderWrapper{}
+	r.SetRender(render.New(or))
+	return r
+}
+
+type RenderWrapper struct { // We need to wrap the renderer because we need a different signature for echo.
+	rnd *render.Render
+}
+
+func (r *RenderWrapper) SetRender(ir *render.Render) {
+	r.rnd = ir
+}
+
+func (r *RenderWrapper) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return r.rnd.HTML(w, 0, name, data) // The zero status code is overwritten by echo.
 }
