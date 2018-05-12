@@ -1,4 +1,4 @@
-package Structs
+package Funcs
 
 import (
 	. "fmt"

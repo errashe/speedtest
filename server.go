@@ -9,7 +9,6 @@ import (
 	"time"
 
 	. "./funcs"
-	. "./structs"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"

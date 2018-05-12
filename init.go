@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	. "./structs"
+	. "./funcs"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"

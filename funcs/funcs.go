@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	. "../structs"
-
 	"github.com/asdine/storm"
 	"github.com/labstack/echo"
 	"gopkg.in/olahol/melody.v1"
@@ -75,7 +73,6 @@ func SpeedTester(ws, ts int, m *melody.Melody, db *storm.DB) {
 
 func SpeedTest(ip, mode string, window_size, test_size int) float64 {
 	block_size := window_size * 1024
-	t := time.Now()
 
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:1337", ip), 3*time.Second)
 	if err != nil {
@@ -86,6 +83,7 @@ func SpeedTest(ip, mode string, window_size, test_size int) float64 {
 
 	conn.Write([]byte(fmt.Sprintf("%s|%d|%d", mode, test_size, window_size)))
 
+	t := time.Now()
 	switch mode {
 	case "download":
 		buf := make([]byte, block_size)
@@ -119,9 +117,9 @@ func SpeedTest(ip, mode string, window_size, test_size int) float64 {
 	return time.Since(t).Seconds()
 }
 
-func NewRender(or render.Options) *RenderWrapper {
+func NewRender(ro render.Options) *RenderWrapper {
 	r := &RenderWrapper{}
-	r.SetRender(render.New(or))
+	r.SetRender(render.New(ro))
 	return r
 }
 
